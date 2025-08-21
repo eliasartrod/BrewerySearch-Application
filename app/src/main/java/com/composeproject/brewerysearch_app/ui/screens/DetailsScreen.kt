@@ -30,11 +30,18 @@ import androidx.core.net.toUri
 @Composable
 fun DetailsScreen(
     brewery: BreweryDto?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    isInBottomSheet: Boolean = false
 ) {
-    Column(
-        modifier = Modifier
+    val baseModifier = if (isInBottomSheet) {
+        Modifier
+            .fillMaxWidth()
+    } else {
+        Modifier
             .fillMaxSize()
+    }
+    Column(
+        modifier = baseModifier
             .padding(16.dp),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start

@@ -28,13 +28,23 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.composeproject.brewerysearch_app.data.models.BreweryDto
 import com.composeproject.brewerysearch_app.ui.viewmodel.PostsUiState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import kotlinx.coroutines.launch
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +113,8 @@ fun HomeScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .shadow(2.dp)
+                            .shadow(2.dp),
+                        colors = CardDefaults.cardColors( containerColor = Color.Green )
                     ) {
                         LazyColumn(
                             modifier = Modifier
@@ -152,10 +163,39 @@ fun HomeScreen(
             is PostsUiState.Success -> {
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(state.data) { item ->
+                        // Zoom-in animation state per item
+                        val scale = remember { Animatable(1f) }
+                        var isAnimating by remember { mutableStateOf(false) }
+                        val scope = rememberCoroutineScope()
+
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onOpenDetails(item.id.orEmpty()) }
+                                .graphicsLayer {
+                                    scaleX = scale.value
+                                    scaleY = scale.value
+                                }
+                                .clickable(enabled = !isAnimating) {
+                                    if (!isAnimating) {
+                                        isAnimating = true
+                                        scope.launch {
+                                            // Slight delay and smooth zoom to give a feeling of "zooming into" the item
+                                            scale.animateTo(
+                                                targetValue = 1.04f,
+                                                animationSpec = tween(
+                                                    durationMillis = 300,
+                                                    delayMillis = 60,
+                                                    easing = LinearOutSlowInEasing
+                                                )
+                                            )
+                                            onOpenDetails(item.id.orEmpty())
+                                            // No need to animate back; navigation will change screen.
+                                            // Reset in case user returns to the list quickly.
+                                            scale.snapTo(1f)
+                                            isAnimating = false
+                                        }
+                                    }
+                                }
                                 .padding(16.dp)
                         ) {
                             Card(
